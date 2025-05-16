@@ -3,9 +3,13 @@ package apiserver
 import (
 	"github.com/Ranper/iam/internal/apiserver/config"
 	genericapiserver "github.com/Ranper/iam/internal/pkg/server"
+	"github.com/Ranper/iam/pkg/log"
+	"github.com/Ranper/iam/pkg/shutdown"
+	"github.com/Ranper/iam/pkg/shutdown/shutdownmanagers/posixsignal"
 )
 
 type apiServer struct {
+	gs               *shutdown.GracefulShutdown
 	genericAPIServer *genericapiserver.GenericAPIServer
 }
 
@@ -19,6 +23,9 @@ type ExtraConfig struct {
 }
 
 func createAPIServer(cfg *config.Config) (*apiServer, error) {
+	gs := shutdown.New()
+	gs.AddShutdownManager(posixsignal.NewPosixSignalManager())
+
 	genericConfig, err := buildGenericConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -30,6 +37,7 @@ func createAPIServer(cfg *config.Config) (*apiServer, error) {
 	}
 
 	server := &apiServer{
+		gs:               gs,
 		genericAPIServer: genericServer,
 	}
 
@@ -52,10 +60,20 @@ func buildGenericConfig(cfg *config.Config) (genericConfig *genericapiserver.Con
 func (s *apiServer) PrepareRun() preparedAPIServer {
 	initRouter(s.genericAPIServer.Engine)
 
+	s.gs.AddShutdownCallback(shutdown.ShutdownCallback(func(shutdownManager string) error {
+		log.Infof("Received shutdown request from %v, shutting down server...", shutdownManager)
+
+		s.genericAPIServer.Close()
+		return nil
+	}))
 	return preparedAPIServer{s}
 }
 
 func (s preparedAPIServer) Run() error {
+
+	if err := s.gs.Start(); err != nil {
+		return err
+	}
 
 	return s.genericAPIServer.Run() // block, until stop.
 }
