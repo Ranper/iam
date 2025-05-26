@@ -1,6 +1,7 @@
 package posixsignal
 
 import (
+	"os"
 	"syscall"
 	"testing"
 	"time"
@@ -75,4 +76,8 @@ func TestStartShutdownOnCustomSignal(t *testing.T) {
 	syscall.Kill(syscall.Getpid(), syscall.SIGHUP)
 
 	waitSig(t, c)
+}
+
+func TestGetHostName(t *testing.T) {
+	t.Log(os.Hostname())
 }

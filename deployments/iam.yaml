@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: iam-apiserver
+  name: iam-apiserver
+  namespace: default
+spec:
+  progressDeadlineSeconds: 10 # 指定多少时间内不能完成滚动升级就视为失败，滚动升级自动取消
+  replicas: 3 # 指定副本数量, 建议 >=2
+  selector:
+    matchLabels:
+      app: iam-apiserver  # 标签格式为key: value对
+  strategy:
+    rollingUpdate:
+      maxSurge: 1 # 最大额外可以存在的副本数，可以为百分比，也可以为整数
+      maxUnavailable: 1 # 表示在更新过程中能够进入不可用状态的 Pod 的最大值，可以为百分比，也可以为整数
+    type: RollingUpdate
+  template: # 指定Pod创建模板。注意：以下定义为Pod的资源定义
+    metadata: # 指定Pod的元数据
+      labels: # 指定Pod的标签
+        app: iam-apiserver
+    spec:
+      containers:
+      - command: # 指定运行命令
+        - /opt/iam/bin/iam-apiserver  # 运行参数
+        - --config=/etc/iam/iam-apiserver.yaml
+        image: igame-sg.tencentcloudcr.com/igame/view_proto/iam-apiserver:v0.1.0  # 镜像名，遵守镜像命名规范
+        imagePullPolicy: Always
+        name: iam-apiserver
+        ports: # 端口设置
+        - containerPort: 8088 # 容器暴露的端口
+          name: insecure # 端口名称
+          protocol: TCP # 协议, TCP和UDP
+        resources: # 资源限制
+          limits:
+            cpu: "1" # 设置cpu limit，1核心 = 1000m
+            memory: 1Gi # 设置memory limit，1G = 1024Mi
+          requests: # requests用于预分配资源,当集群中的节点没有request所要求的资源数量时,容器会创建失败
+            cpu: 250m # 设置cpu request
+            memory: 500Mi # 设置memory request
+        volumeMounts: # 挂载日志卷
+        - mountPath: /etc/iam/iam-apiserver.yaml # 容器内挂载镜像路径
+          name: iam # 引用的卷名称
+          subPath: iam-apiserver.yaml # 指定所引用的卷内的子路径，而不是其根路径。
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always # 重启策略，Always、OnFailure、Never
+      schedulerName: default-scheduler # 指定调度器的名字
+      imagePullSecrets: # 在Pod中设置ImagePullSecrets只有提供自己密钥的Pod才能访问私有仓库
+        - name: regcred # 镜像仓库的Secrets需要在集群中手动创建
+      securityContext: {} # 指定安全上下文
+      terminationGracePeriodSeconds: 5 # 优雅关闭时间，这个时间内优雅关闭未结束，k8s 强制 kill
+      volumes: # 配置数据卷，类型详见https://kubernetes.io/zh/docs/concepts/storage/volumes
+      - configMap: # configMap 类型的数据卷
+          defaultMode: 420 #权限设置0~0777，默认0664
+          items:
+          - key: iam-apiserver.yaml
+            path: iam-apiserver.yaml # 指定在容器内挂载的路径
+          name: iam # configmap名称
+        name: iam # 设置卷名称，与volumeMounts名称对应
+          
+        
+        

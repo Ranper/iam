@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/gosuri/uitable v0.0.4
 	github.com/marmotedu/component-base v1.6.2
 	github.com/marmotedu/iam v1.7.0
 	github.com/spf13/pflag v1.0.6
@@ -16,11 +17,9 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/marmotedu/errors v1.0.2 // indirect
 	github.com/marmotedu/log v0.0.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
