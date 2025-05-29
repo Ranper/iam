@@ -25,10 +25,9 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Ranper/iam/pkg/log/klog.go"
+	"github.com/Ranper/iam/pkg/log/klog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	// "github.com/Ranper/iam/pkg/log/klog"
 )
 
 // InfoLogger represents the ability to log non-error messages, at a particular verbosity.

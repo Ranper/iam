@@ -20,12 +20,13 @@ import (
 type GenericAPIServer struct {
 	middlewares []string
 
+	SecureServingInfo   *SecureServingInfo
 	InsecureServingInfo *InsecureServingInfo
 
 	*gin.Engine // 包装了一下gin.Engine
 	healthz     bool
 
-	insecureServer *http.Server
+	insecureServer, secureServer *http.Server
 }
 
 func initGenericAPIServer(s *GenericAPIServer) {
@@ -65,6 +66,11 @@ func (s *GenericAPIServer) Run() error {
 		Handler: s,
 	}
 
+	s.secureServer = &http.Server{
+		Addr:    s.SecureServingInfo.Address(),
+		Handler: s,
+	}
+
 	var eg errgroup.Group
 	eg.Go(func() error {
 		log.Infof("Start to listen the incoming requests on http address: %s", s.InsecureServingInfo.Address)
@@ -76,6 +82,24 @@ func (s *GenericAPIServer) Run() error {
 		}
 
 		log.Infof("Server on %s stopped", s.InsecureServingInfo.Address)
+
+		return nil
+	})
+
+	eg.Go(func() error {
+		key, cert := s.SecureServingInfo.CertKey.KeyFile, s.SecureServingInfo.CertKey.CertFile
+		if cert == "" || key == "" || s.SecureServingInfo.BindPort == 0 { // BindPort = 0 表示不开启https
+			return nil
+		}
+
+		log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Address())
+
+		if err := s.secureServer.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err.Error())
+			return err
+		}
+
+		log.Infof("Server on %s stopped", s.SecureServingInfo.Address())
 
 		return nil
 	})
@@ -99,6 +123,10 @@ func (s *GenericAPIServer) Run() error {
 func (s *GenericAPIServer) Close() {
 	ctx, calcel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer calcel()
+
+	if err := s.secureServer.Shutdown(ctx); err != nil {
+		log.Warnf("Shutdown secure server failed: %s", err.Error())
+	}
 
 	if err := s.insecureServer.Shutdown(ctx); err != nil {
 		log.Warnf("Shutdown insecure server failed: %s", err.Error())

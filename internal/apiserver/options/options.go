@@ -12,6 +12,7 @@ import (
 
 type Options struct {
 	GenericServerRunOptions *genericoptions.ServerRunOptions       `json:"server" mapstructure:"server"`
+	SecureServing           *genericoptions.SecureServingOptions   `json:"secure" mapstructure:"secure"`
 	InsecureServing         *genericoptions.InsecureServingOptions `json:"insecure" mapstructure:"insecure"`
 	Log                     *log.Options                           `json:"log" mapstructure:"log"`
 }
@@ -20,6 +21,7 @@ type Options struct {
 func NewOptions() *Options {
 	return &Options{
 		GenericServerRunOptions: genericoptions.NewServerRunOptions(),
+		SecureServing:           genericoptions.NewSecureServingOptions(),
 		InsecureServing:         genericoptions.NewInsecureServingOptions(),
 		Log:                     log.NewOptions(),
 	}
@@ -32,6 +34,7 @@ func (o *Options) ApplyTo(c *server.Config) error {
 // Flags returns flags for a specific APIServer by section name.
 func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
 	o.GenericServerRunOptions.AddFlags(fss.FlagSet("generic"))
+	o.SecureServing.AddFlags(fss.FlagSet("secure"))
 	o.InsecureServing.AddFlags(fss.FlagSet("insecure"))
 	o.Log.AddFlags(fss.FlagSet("logs"))
 
